@@ -17,10 +17,25 @@ if (!is_null($events['events'])) {
      			$userId = $event['source']['userId'];
 
 			// Get replyToken
+			if ($receivetext == 'hello')
+			{
+				$replyToken = $event['replyToken'];
+	   		$receivetext = $event['message']['text'];
+
+      			$processtext = 'ว่าไงครับท่าน'."\n";
+			$processtext .= 'ดีงับ';
+
+		 	 // Build message to reply back
+	    		$messages = [
+	   		'type' => 'text',
+	    		'text' => $processtext
+	     		];
+				
+			}else{
 			$replyToken = $event['replyToken'];
 	   		$receivetext = $event['message']['text'];
 
-      			$processtext = 'Sanny Bot'."\n";
+      			$processtext = 'ว่าไงครับท่าน'."\n";
 			$processtext .= $receivetext;
 
 		 	 // Build message to reply back
@@ -34,7 +49,7 @@ if (!is_null($events['events'])) {
 			'replyToken' => $replyToken,
 			'messages' => [$messages],
 			];
-
+			}
       $post = json_encode($data);
       $headers = array('Content-Type: application/json', 'Authorization: Bearer ' . $access_token);
       $ch = curl_init($url);
