@@ -3,7 +3,7 @@
     $APPID= "JARVIS/";      //PUT NETPIE APPID Name end with "/"
     $KEY = "B4nf5meVFnvLVDS";          //PUT NETPIE Key ID
     $SECRET = "SvCxt7YSA18JrCekOcFGCaGIB";   //PUT NETPIE Secret ID 
-    $Topic = "NodeMCU1";
+    $Topic = "$topic";
   
     put("https://api.netpie.io/microgear/".$APPID.$Topic."?retain&auth=".$KEY.":".$SECRET,$msg);
   }
