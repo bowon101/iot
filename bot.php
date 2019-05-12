@@ -9,10 +9,10 @@ $content = file_get_contents('php://input');
 $events = json_decode($content, true);
 
 // Validate parsed JSON data
-if (!is_null($events['ESP'])) {
+/*if (!is_null($events['ESP'])) {
    send_LINE($events['ESP']);
    echo "OK";
-}
+}*/
 
 /*if (!is_null($events['events'])) {
    echo "line bot";
