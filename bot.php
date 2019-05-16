@@ -1,69 +1,48 @@
 <?php
- require("pub.php");
- require("line.php");
-
-// Get POST body content
-$content = file_get_contents('php://input');
-// Parse JSON
-
-$events = json_decode($content, true);
-// Validate parsed JSON data
-if (!is_null($events['ESP'])) {
-	
-	send_LINE($events['ESP']);
-		
-	echo "OK";
-	}
-if (!is_null($events['events'])) {
-	echo "line bot";
-	// Loop through each event
-	foreach ($events['events'] as $event) {
-		// Reply only when message sent is in 'text' format
-		if ($event['type'] == 'message' && $event['message']['type'] == 'text') {
-			// Get text sent
-			$text = $event['message']['text'];
-			// Get replyToken
-			$replyToken = $event['replyToken'];
-			$access_token = 'FBzQZx8xlOAa+Y1Wug39X9eS5CeGrncZKaLXCejdlIMjjBdrxTivKW4z0gxqYKc4AJ0TbafGH3HblKsIQ0G/+esWfmj5dJVqyARzvvbx1aASiRQaxSD4jcyjs2vgO7MRUJ6Sx/9jCFQig/nc3omTwgdB04t89/1O/w1cDnyilFU='; 
-
-  $messages = [
-        'type' => 'text',
-        'text' => $msg
-        //'text' => $text
-      ];
-
-      // Make a POST Request to Messaging API to reply to sender
-      $url = 'https://api.line.me/v2/bot/message/push';
-      $data = [
-
-        'to' => 'U70da6a9e9f798d5c0bbf9e8cdbf3ed3c',
-        'messages' => [$messages],
-      ];
-      $post = json_encode($data);
-      $headers = array('Content-Type: application/json', 'Authorization: Bearer ' . $access_token);
-
-      $ch = curl_init($url);
-      curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
-      curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-      curl_setopt($ch, CURLOPT_POSTFIELDS, $post);
-      curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-      curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
-      $result = curl_exec($ch);
-      curl_close($ch);
-
-      echo $result . "\r\n"; 
+require("vendor/autoload.php");
  
-			// Build message to reply back
-
-			$Topic = "NodeMCU1" ;
-			getMqttfromlineMsg($Topic,$text);
-			   
-			
-		}
-	}
+use \LINE\LINEBot\HTTPClient\CurlHTTPClient;
+use \LINE\LINEBot;
+ 
+require("phpMQTT.php");
+ 
+$mqtt = new phpMQTT("postman.cloudmqtt.com", 1883, "phpMQTT Pub Example"); //เปลี่ยน www.yourmqttserver.com ไปที่ mqtt server ที่เราสมัครไว้นะครับ
+ 
+$token = "FBzQZx8xlOAa+Y1Wug39X9eS5CeGrncZKaLXCejdlIMjjBdrxTivKW4z0gxqYKc4AJ0TbafGH3HblKsIQ0G/+esWfmj5dJVqyARzvvbx1aASiRQaxSD4jcyjs2vgO7MRUJ6Sx/9jCFQig/nc3omTwgdB04t89/1O/w1cDnyilFU="; //นำ token ที่มาจาก line developer account ของเรามาใส่ครับ
+ 
+$httpClient = new CurlHTTPClient($token);
+$bot = new LINEBot($httpClient, ['channelSecret' =&gt; $token]);
+// webhook
+$jsonStr = file_get_contents('php://input');
+$jsonObj = json_decode($jsonStr);
+print_r($jsonStr);
+foreach ($jsonObj-&gt;events as $event) {
+if('message' == $event-&gt;type){
+// debug
+//file_put_contents("message.json", json_encode($event));
+$text = $event-&gt;message-&gt;text;
+ 
+if (preg_match("/สวัสดี/", $text)) {
+$text = "มีอะไรให้จ่าวิสรับใช้ครับ";
 }
-$Topic = "NodeMCU1" ;
-$text = "Test";
-getMqttfromlineMsg($Topic,$text);
-echo "OK3";
-?>
+ 
+if (preg_match("/เปิดทีวี/", $text)) {     //หากในแชตที่ส่งมามีคำว่า เปิดทีวี ก็ให้ส่ง mqtt ไปแจ้ง server เราครับ
+if ($mqtt-&gt;connect()) {
+$mqtt-&gt;publish("/ESP/REMOTE","TV"); // ตัวอย่างคำสั่งเปิดทีวีที่จะส่งไปยัง mqtt server
+$mqtt-&gt;close();
+}
+$text = "เปิดทีวีให้แล้วคร้าบบบบ";
+}
+if (preg_match("/ปิดทีวี/", $text) and !preg_match("/เปิดทีวี/", $text)) {
+if ($mqtt-&gt;connect()) {
+$mqtt-&gt;publish("/ESP/REMOTE","TV");
+$mqtt-&gt;close();
+}
+$text = "จ่าปิดทีวีให้แล้วนะครับ!!";
+}
+$response = $bot-&gt;replyText($event-&gt;replyToken, $text); // ส่งคำ reply กลับไปยัง line application
+ 
+}
+}
+ 
+?>;
