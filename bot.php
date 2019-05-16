@@ -1,5 +1,5 @@
 <?php
-use \LINE\LINEBot\HTTPClient\CurlHTTPClient;
+require(CurlHTTPClient.php);
 //
 $access_token ='FBzQZx8xlOAa+Y1Wug39X9eS5CeGrncZKaLXCejdlIMjjBdrxTivKW4z0gxqYKc4AJ0TbafGH3HblKsIQ0G/+esWfmj5dJVqyARzvvbx1aASiRQaxSD4jcyjs2vgO7MRUJ6Sx/9jCFQig/nc3omTwgdB04t89/1O/w1cDnyilFU=';
 $mqtt = new phpMQTT("postman.cloudmqtt.com", 1883, "phpMQTT Pub Example");
