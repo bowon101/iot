@@ -16,33 +16,69 @@ $bot = new LINEBot($httpClient, ['2f77160200bbb55edbe98b767f0ed52e' =&gt; $token
 $jsonStr = file_get_contents('php://input');
 $jsonObj = json_decode($jsonStr);
 print_r($jsonStr);
-foreach ($jsonObj-&gt;events as $event) {
-if('message' == $event-&gt;type){
-// debug
-//file_put_contents("message.json", json_encode($event));
-$text = $event-&gt;message-&gt;text;
- 
-if (preg_match("/สวัสดี/", $text)) {
-$text = "มีอะไรให้จ่าวิสรับใช้ครับ";
+// Parse JSON
+$events = json_decode($content, true);
+// Validate parsed JSON data
+if (!is_null($events['events'])) {
+	// Loop through each event
+	foreach ($events['events'] as $event) {
+		// Reply only when message sent is in 'text' format
+		if ($event['type'] == 'message' && $event['message']['type'] == 'text') {
+			//source
+     			$userId = $event['source']['userId'];
+
+			// Get replyToken
+			if ($receivetext == 'hello')
+			{
+				$replyToken = $event['replyToken'];
+	   		$receivetext = $event['message']['text'];
+
+      			$processtext = 'ว่าไงครับท่าน'."\n";
+			$processtext .= 'ดีงับ';
+
+		 	 // Build message to reply back
+	    		$messages = [
+	   		'type' => 'text',
+	    		'text' => $processtext
+	     		];
+			$post = json_encode($data);	
+			}else{
+			$replyToken = $event['replyToken'];
+	   		$receivetext = $event['message']['text'];
+
+      			$processtext = 'ว่าไงครับท่าน'."\n";
+			$processtext .= $receivetext;
+
+		 	 // Build message to reply back
+	    		$messages = [
+	   		'type' => 'text',
+	    		'text' => $processtext
+	     		];
+
+			$url = 'https://api.line.me/v2/bot/message/reply';
+			$data = [
+			'replyToken' => $replyToken,
+			'messages' => [$messages],
+			];
+			$post = json_encode($data);
+			}
+      
+      $headers = array('Content-Type: application/json', 'Authorization: Bearer ' . $access_token);
+      $ch = curl_init($url);
+      curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+      curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+      curl_setopt($ch, CURLOPT_POSTFIELDS, $post);
+      curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+      curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+      $result = curl_exec($ch);
+      curl_close($ch);
+
+      echo $result . "\r\n";
+
+
+    }
+  }
 }
- 
-if (preg_match("/เปิดทีวี/", $text)) {     //หากในแชตที่ส่งมามีคำว่า เปิดทีวี ก็ให้ส่ง mqtt ไปแจ้ง server เราครับ
-if ($mqtt-&gt;connect()) {
-$mqtt-&gt;publish("/ESP/REMOTE","TV"); // ตัวอย่างคำสั่งเปิดทีวีที่จะส่งไปยัง mqtt server
-$mqtt-&gt;close();
-}
-$text = "เปิดทีวีให้แล้วคร้าบบบบ";
-}
-if (preg_match("/ปิดทีวี/", $text) and !preg_match("/เปิดทีวี/", $text)) {
-if ($mqtt-&gt;connect()) {
-$mqtt-&gt;publish("/ESP/REMOTE","TV");
-$mqtt-&gt;close();
-}
-$text = "จ่าปิดทีวีให้แล้วนะครับ!!";
-}
-$response = $bot-&gt;replyText($event-&gt;replyToken, $text); // ส่งคำ reply กลับไปยัง line application
- 
-}
-}
- 
-?>;
+echo "OK";
+
+?>
