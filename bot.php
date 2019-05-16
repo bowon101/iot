@@ -1,78 +1,74 @@
-<?php
-require(CurlHTTPClient.php);
-//
-$access_token ='FBzQZx8xlOAa+Y1Wug39X9eS5CeGrncZKaLXCejdlIMjjBdrxTivKW4z0gxqYKc4AJ0TbafGH3HblKsIQ0G/+esWfmj5dJVqyARzvvbx1aASiRQaxSD4jcyjs2vgO7MRUJ6Sx/9jCFQig/nc3omTwgdB04t89/1O/w1cDnyilFU=';
-$mqtt = new phpMQTT("postman.cloudmqtt.com", 1883, "phpMQTT Pub Example");
+<?php 
+	/*Get Data From POST Http Request*/
+	$datas = file_get_contents('php://input');
+	/*Decode Json From LINE Data Body*/
+	$deCode = json_decode($datas,true);
 
-$httpClient = new CurlHTTPClient($token);
-$bot = new LINEBot($httpClient, ['2f77160200bbb55edbe98b767f0ed52e' =&gt; $token]);
+	file_put_contents('log.txt', file_get_contents('php://input') . PHP_EOL, FILE_APPEND);
 
-// Get POST body content
-$content = file_get_contents('php://input');
-// Parse JSON
-$events = json_decode($content, true);
+	$replyToken = $deCode['events'][0]['replyToken'];
 
-// Validate parsed JSON data
-if (!is_null($events['events'])) {
-	// Loop through each event
-	foreach ($events['events'] as $event) {
-		// Reply only when message sent is in 'text' format
-		if ($event['type'] == 'message' && $event['message']['type'] == 'text') {
-			//source
-     			$userId = $event['source']['userId'];
+	$messages = [];
+	$messages['replyToken'] = $replyToken;
+	$messages['messages'][0] = getFormatTextMessage("เอ้ย ถามอะไรก็ตอบได้");
 
-			// Get replyToken
-			if ($receivetext == 'hello')
-			{
-				$replyToken = $event['replyToken'];
-	   		$receivetext = $event['message']['text'];
+	$encodeJson = json_encode($messages);
 
-      			$processtext = 'ว่าไงครับท่าน'."\n";
-			$processtext .= 'ดีงับ';
+	$LINEDatas['url'] = "https://api.line.me/v2/bot/message/reply";
+  	$LINEDatas['token'] = "FBzQZx8xlOAa+Y1Wug39X9eS5CeGrncZKaLXCejdlIMjjBdrxTivKW4z0gxqYKc4AJ0TbafGH3HblKsIQ0G/+esWfmj5dJVqyARzvvbx1aASiRQaxSD4jcyjs2vgO7MRUJ6Sx/9jCFQig/nc3omTwgdB04t89/1O/w1cDnyilFU=";
 
-		 	 // Build message to reply back
-	    		$messages = [
-	   		'type' => 'text',
-	    		'text' => $processtext
-	     		];
-			$post = json_encode($data);	
-			}else{
-			$replyToken = $event['replyToken'];
-	   		$receivetext = $event['message']['text'];
+  	$results = sentMessage($encodeJson,$LINEDatas);
 
-      			$processtext = 'ว่าไงครับท่าน'."\n";
-			$processtext .= $receivetext;
+	/*Return HTTP Request 200*/
+	http_response_code(200);
 
-		 	 // Build message to reply back
-	    		$messages = [
-	   		'type' => 'text',
-	    		'text' => $processtext
-	     		];
+	function getFormatTextMessage($text)
+	{
+		$datas = [];
+		$datas['type'] = 'text';
+		$datas['text'] = $text;
 
-			$url = 'https://api.line.me/v2/bot/message/reply';
-			$data = [
-			'replyToken' => $replyToken,
-			'messages' => [$messages],
-			];
-			$post = json_encode($data);
-			}
-      
-      $headers = array('Content-Type: application/json', 'Authorization: Bearer ' . $access_token);
-      $ch = curl_init($url);
-      curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
-      curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-      curl_setopt($ch, CURLOPT_POSTFIELDS, $post);
-      curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-      curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
-      $result = curl_exec($ch);
-      curl_close($ch);
+		return $datas;
+	}
 
-      echo $result . "\r\n";
+	function sentMessage($encodeJson,$datas)
+	{
+		$datasReturn = [];
+		$curl = curl_init();
+		curl_setopt_array($curl, array(
+		  CURLOPT_URL => $datas['url'],
+		  CURLOPT_RETURNTRANSFER => true,
+		  CURLOPT_ENCODING => "",
+		  CURLOPT_MAXREDIRS => 10,
+		  CURLOPT_TIMEOUT => 30,
+		  CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+		  CURLOPT_CUSTOMREQUEST => "POST",
+		  CURLOPT_POSTFIELDS => $encodeJson,
+		  CURLOPT_HTTPHEADER => array(
+		    "authorization: Bearer ".$datas['token'],
+		    "cache-control: no-cache",
+		    "content-type: application/json; charset=UTF-8",
+		  ),
+		));
 
+		$response = curl_exec($curl);
+		$err = curl_error($curl);
 
-    }
-  }
-}
-echo "OK";
+		curl_close($curl);
 
+		if ($err) {
+		    $datasReturn['result'] = 'E';
+		    $datasReturn['message'] = $err;
+		} else {
+		    if($response == "{}"){
+			$datasReturn['result'] = 'S';
+			$datasReturn['message'] = 'Success';
+		    }else{
+			$datasReturn['result'] = 'E';
+			$datasReturn['message'] = $response;
+		    }
+		}
+
+		return $datasReturn;
+	}
 ?>
